@@ -1,3 +1,4 @@
+
 package model;
 
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ public class CabeceraPedido {
     private ArrayList<DetallePedido> listaDetalles;
 
     public CabeceraPedido() {
-
+        this.listaDetalles = new ArrayList<>();
     }
 
     public CabeceraPedido(String codPedido,String codCliente, String fechaPedido, double totalPagar) {

@@ -1,20 +1,20 @@
-1001;Cuaderno A4;5.5;193
+1001;Cuaderno A4;5.5;195
 1002;Lapiz Grafito HB;1.5;90
-1003;Borrador de Nata;2.0;99
-1004;Goma en Barra;1.0;50
-1005;Boligrafo Negro;3.2;148
-1006;Marcador Permanente Azul;4.0;80
+1003;Borrador de Nata;2.0;90
+1004;Goma en Barra;1.0;48
+1005;Boligrafo Negro;3.2;145
+1006;Marcador Permanente Azul;4.0;79
 1007;Regla 30cm;2.5;120
-1008;Tijeras Punta Redonda;6.8;75
+1008;Tijeras Punta Redonda;6.8;72
 1009;Calculadora Basica;12.5;40
-1010;Agenda Anual;18.0;60
+1010;Agenda Anual;18.0;59
 1011;Carpeta Archivadora;7.5;90
 1012;Post-it Amarillos;3.5;110
 1013;Cinta Adhesiva Transparente;2.8;130
-1014;Sacapuntas Metalico;1.9;95
+1014;Sacapuntas Metalico;1.9;92
 1015;Clips Sujetapapeles;1.2;250
 1016;Caja de Colores x12;9.5;55
 1017;Papel Bond A4 Resma;6.0;30
-1018;Resaltador Amarillo;3.0;140
-1019;Perforadora de Papel;10.0;35
+1018;Resaltador Amarillo;3.0;139
+1019;Perforadora de Papel;10.0;33
 1020;Mochila Escolar;25.9;25

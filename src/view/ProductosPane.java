@@ -5,6 +5,7 @@ import model.Producto;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -22,7 +23,10 @@ public class ProductosPane extends JDialog {
     private JTable table;
     private JButton modificarProductoButton;
     private JButton eliminarProductoButton;
+    private JTextField txtBusqueda;
+    private JButton buscarButton;
     private DefaultTableModel modelo;
+    private TableRowSorter<DefaultTableModel> sorter;
 
     ArregloProductos ap = new ArregloProductos();
 
@@ -34,29 +38,59 @@ public class ProductosPane extends JDialog {
             }
         };
         table.setModel(modelo);
+        sorter = new TableRowSorter<>(modelo);
+        table.setRowSorter(sorter);
         updateTable();
         setContentPane(contentPane);
-        setBounds(100, 100, 650, 400);
+        setBounds(100, 100, 600, 500);
         setTitle("Gestion de Productos");
         setLocationRelativeTo(null);
         setModal(true);
         deshabilitarTodo();
         nuevoButtom.requestFocus();
 
+
+        buscarButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try{
+                    txtDescripcion.setText(ap.buscarProducto(txtBusqueda.getText()).getDescripcion());
+                    txtCodProducto.setText(ap.buscarProducto(txtBusqueda.getText()).getCodProducto());
+                    txtPrecio.setText(String.valueOf(ap.buscarProducto(txtBusqueda.getText()).getPrecio()));
+                    txtStock.setText(String.valueOf(ap.buscarProducto(txtBusqueda.getText()).getStock()));
+                    habilitarCampos();
+                    table.setRowSelectionInterval(ap.getindiceProducto(ap.buscarProducto(txtBusqueda.getText())), ap.getindiceProducto(ap.buscarProducto(txtBusqueda.getText())));
+                    modificarProductoButton.setEnabled(true);
+                    eliminarProductoButton.setEnabled(true);
+                    agregarProductoButtom.setEnabled(false);
+                    nuevoButtom.setEnabled(true);
+                    txtBusqueda.setText("");
+                } catch (Exception ex) {
+                    mensaje("Error al buscar");
+                    txtBusqueda.setText("");
+
+                }
+            }
+        });
+
         agregarProductoButtom.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Producto nuevoProducto = new Producto();
-                nuevoProducto.setCodProducto(String.valueOf(ap.codCorrelativo()));
-                nuevoProducto.setDescripcion(leerDescripcion());
-                nuevoProducto.setPrecio(leerPrecio());
-                nuevoProducto.setStock(leerStock());
-                ap.agregarProducto(nuevoProducto);
-                updateTable();
-                limpiarCampos();
-                mensaje("Producto agregado correctamente");
-                deshabilitarTodo();
-                nuevoButtom.setEnabled(true);
+                try{
+                    Producto nuevoProducto = new Producto();
+                    nuevoProducto.setCodProducto(String.valueOf(ap.codCorrelativo()));
+                    nuevoProducto.setDescripcion(leerDescripcion());
+                    nuevoProducto.setPrecio(leerPrecio());
+                    nuevoProducto.setStock(leerStock());
+                    ap.agregarProducto(nuevoProducto);
+                    updateTable();
+                    limpiarCampos();
+                    mensaje("Producto agregado correctamente");
+                    deshabilitarTodo();
+                    nuevoButtom.setEnabled(true);
+                } catch (Exception ex) {
+                    mensaje("Error al agregar producto");
+                }
             }
         });
 
@@ -73,6 +107,7 @@ public class ProductosPane extends JDialog {
                     modificarProductoButton.setEnabled(true);
                     eliminarProductoButton.setEnabled(true);
                     nuevoButtom.setEnabled(true);
+                    agregarProductoButtom.setEnabled(false);
                 } catch (Exception ex) {
                     System.out.println(ex.getMessage());
                 }
@@ -99,6 +134,8 @@ public class ProductosPane extends JDialog {
                 txtDescripcion.requestFocus();
                 nuevoButtom.setEnabled(false);
                 agregarProductoButtom.setEnabled(true);
+                modificarProductoButton.setEnabled(false);
+                eliminarProductoButton.setEnabled(false);
                 habilitarCampos();
             }
         });

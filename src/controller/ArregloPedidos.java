@@ -1,16 +1,14 @@
+
 package controller;
 
 import model.CabeceraPedido;
 import model.DetallePedido;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
 public class ArregloPedidos {
     private ArrayList<CabeceraPedido> pedidos;
-    private ArrayList<DetallePedido> detalles;
 
     public ArregloPedidos() {
         pedidos = new ArrayList<>();
@@ -22,13 +20,23 @@ public class ArregloPedidos {
 
     public void agregarPedido(CabeceraPedido pedido) {
         pedidos.add(pedido);
+        guardarCabeceras();
+        guardarDetalles();
     }
 
     public String codCorrelativo(){
         if(pedidos.isEmpty()){
             return "P001";
-        }else {
-            return "P"+(Integer.parseInt(getPedido(tamanioPedidos()-1).getCodPedido())+1);
+        } else {
+            String last = getPedido(tamanioPedidos()-1).getCodPedido();
+            String numStr = last.replaceAll("\\D+", "");
+            int n = 0;
+            try {
+                n = Integer.parseInt(numStr);
+            } catch (NumberFormatException e) {
+                n = 0;
+            }
+            return String.format("P%03d", n + 1);
         }
     }
 
@@ -38,7 +46,7 @@ public class ArregloPedidos {
 
     public CabeceraPedido buscarPedido(String codPedido) {
         for (int i = 0; i < tamanioPedidos(); i++) {
-            if (pedidos.get(i).getCodPedido() == codPedido) {
+            if (pedidos.get(i).getCodPedido().equals(codPedido)) {
                 return pedidos.get(i);
             }
         }
@@ -54,12 +62,12 @@ public class ArregloPedidos {
             String linea;
             while ((linea = br.readLine()) != null) {
                 String[] partes = linea.split("\\|");
-                if (partes.length == 5) {
+                if (partes.length == 4) {
                     CabeceraPedido cp = new CabeceraPedido(
                             partes[0],
                             partes[1],
                             partes[2],
-                            Double.parseDouble(partes[3]) // totalPagar (double)
+                            Double.parseDouble(partes[3])
                     );
                     pedidos.add(cp);
                 }
@@ -73,17 +81,20 @@ public class ArregloPedidos {
             String linea;
             while ((linea = br.readLine()) != null) {
                 String[] partes = linea.split("\\|");
-                if (partes.length == 5) {
-                    DetallePedido dp = new DetallePedido(
-                            partes[0], // codPedido (String)
-                            Integer.parseInt(partes[1]),
-                            Double.parseDouble(partes[2]), // cantidad (int)
-                            partes[3]
+                if (partes.length == 4) {
+                    String codPedido = partes[0];
+                    String codProducto = partes[1];
+                    int cantidad = Integer.parseInt(partes[2]);
+                    double precioVenta = Double.parseDouble(partes[3]);
 
+                    DetallePedido dp = new DetallePedido(
+                            codProducto,
+                            cantidad,
+                            precioVenta,
+                            codPedido
                     );
 
-                    // Buscar la CabeceraPedido a la que pertenece este detalle
-                    CabeceraPedido cabecera = buscarPedido(dp.getCodPedido());
+                    CabeceraPedido cabecera = buscarPedido(codPedido);
                     if (cabecera != null) {
                         cabecera.agregarDetalle(dp);
                     }
@@ -92,5 +103,35 @@ public class ArregloPedidos {
         } catch (IOException e) {
             System.err.println("Archivo detalles.txt no encontrado o error de lectura: " + e.getMessage());
         }
+    }
+
+    private void guardarCabeceras() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("cabeceras.txt"))) {
+            for (CabeceraPedido cp : pedidos) {
+                bw.write(cp.getCodPedido() + "|" + cp.getCodCliente() + "|" + cp.getFechaPedido() + "|" + cp.getTotalPagar());
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            System.err.println("Error al escribir cabeceras.txt: " + e.getMessage());
+        }
+    }
+
+    private void guardarDetalles() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("detalles.txt"))) {
+            for (CabeceraPedido cp : pedidos) {
+                for (DetallePedido dp : cp.getListaDetalles()) {
+                    bw.write(dp.getCodPedido() + "|" + dp.getCodProducto() + "|" + dp.getCantidad() + "|" + dp.getPrecioVenta());
+                    bw.newLine();
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error al escribir detalles.txt: " + e.getMessage());
+        }
+    }
+
+    // Método público para forzar guardado manual si se desea
+    public void guardarTodos() {
+        guardarCabeceras();
+        guardarDetalles();
     }
 }

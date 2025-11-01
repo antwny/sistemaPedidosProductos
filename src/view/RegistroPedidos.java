@@ -3,7 +3,9 @@ package view;
 import com.formdev.flatlaf.FlatLightLaf;
 import controller.ArregloPedidos;
 import controller.ArregloProductos;
+import model.CabeceraPedido;
 import model.Calendario;
+import model.DetallePedido;
 import model.Producto;
 
 import javax.swing.*;
@@ -12,7 +14,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 
 public class RegistroPedidos extends JDialog {
     private JPanel contentPane;
@@ -33,14 +34,14 @@ public class RegistroPedidos extends JDialog {
     private JLabel jLstock;
     private JLabel jLtotalPedido;
     private DefaultTableModel modelo;
-
+    Double totalPedido = 0.0;
 
     ArregloProductos arregloProductos = new ArregloProductos();
     ArregloPedidos arregloPedidos = new ArregloPedidos();
 
     public RegistroPedidos() {
         setContentPane(contentPane);
-        setBounds(100, 100, 750, 400);
+        setBounds(100, 100, 750, 500);
         setTitle("Registrar Pedidos");
         setLocationRelativeTo(null);
         setModal(true);
@@ -51,6 +52,7 @@ public class RegistroPedidos extends JDialog {
         llenarcboProductos();
         llenarCodPedido();
         stockItem();
+
         Object[] columnas = {"Codigo", "Descripcion", "Cantidad", "Precio Unitario"};
 
         // Crea una subclase anónima de DefaultTableModel
@@ -80,17 +82,17 @@ public class RegistroPedidos extends JDialog {
                 try {
 
                     Producto producto = arregloProductos.getProducto(cboProductos.getSelectedIndex());
-                    if (arregloProductos.verificarStock(producto.getCodProducto(), Integer.parseInt(txtCantidad.getText()))) {
+                    if (arregloProductos.verificarStock(producto.getCodProducto(), Integer.parseInt(txtCantidad.getText().trim()))) {
                         modelo.addRow(new Object[]{
                                 producto.getCodProducto(),
                                 producto.getDescripcion(),
-                                txtCantidad.getText(),
+                                txtCantidad.getText().trim(),
                                 producto.getPrecio()
                         });
                         updateTotalPedido();
                         txtCantidad.setText("");
                         cboProductos.setSelectedIndex(-1);
-                        nuevoItemButton.setEnabled(true);
+
                         agregarItemButton.setEnabled(false);
                         limpiarDeshabilitarCampos();
                     } else mensaje("Insuficiente stock");
@@ -151,10 +153,10 @@ public class RegistroPedidos extends JDialog {
             public void actionPerformed(ActionEvent e) {
                 Producto producto = arregloProductos.getProducto(cboProductos.getSelectedIndex());
                 if (arregloProductos.verificarStock(producto.getCodProducto(), Integer.parseInt(txtCantidad.getText()))) {
-                    modelo.setValueAt(txtCantidad.getText(), table.getSelectedRow(), 2);
+                    modelo.setValueAt(txtCantidad.getText().trim(), table.getSelectedRow(), 2);
                     limpiarDeshabilitarCampos();
                     updateTotalPedido();
-                }else mensaje("Insuficiente stock");
+                } else mensaje("Insuficiente stock");
             }
         });
 
@@ -162,22 +164,49 @@ public class RegistroPedidos extends JDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    for (int i = 0; i < modelo.getRowCount(); i++) {
-                        String codProducto = (String) modelo.getValueAt(i, 0);
-                        int cantidad = Integer.parseInt(modelo.getValueAt(i, 2).toString());
-                        arregloProductos.modificarStock(codProducto, cantidad);
-
-                        limpiarDeshabilitarCampos();
-
-                        modelo.setRowCount(0);
-                        updateTotalPedido();
-                        txtCodPedido.setText(arregloPedidos.codCorrelativo());
+                    if (modelo.getRowCount() == 0) {
+                        mensaje("No hay items en el pedido");
+                        return;
                     }
-                    mensaje("Pedido registrado con exito");
-                }catch (Exception ex) { mensaje("Error al registrar el pedido"); }
 
+                    CabeceraPedido cabeceraPedido = new CabeceraPedido();
+                    cabeceraPedido.setCodPedido(arregloPedidos.codCorrelativo());
+                    cabeceraPedido.setFechaPedido(Calendario.getFechaActual());
+                    cabeceraPedido.setCodCliente("Anónimo");
+                    cabeceraPedido.setTotalPagar(totalPedido);
+
+                    // Crear detalles a partir de las filas de la tabla
+                    for (int i = 0; i < modelo.getRowCount(); i++) {
+                        String codProducto = modelo.getValueAt(i, 0).toString();
+                        int cantidad = Integer.parseInt(modelo.getValueAt(i, 2).toString());
+                        double precioVenta = Double.parseDouble(modelo.getValueAt(i, 3).toString());
+
+                        DetallePedido dp = new DetallePedido(codProducto, cantidad, precioVenta, cabeceraPedido.getCodPedido());
+                        cabeceraPedido.agregarDetalle(dp);
+                    }
+
+                    // Actualizar stock para cada detalle
+                    for (DetallePedido dp : cabeceraPedido.getListaDetalles()) {
+                        arregloProductos.modificarStock(dp.getCodProducto(), dp.getCantidad());
+                    }
+
+                    // Guardar cabecera y detalles en archivos
+                    arregloPedidos.agregarPedido(cabeceraPedido);
+
+                    // Limpiar UI
+                    modelo.setRowCount(0);
+                    limpiarDeshabilitarCampos();
+                    updateTotalPedido();
+                    txtCodPedido.setText(arregloPedidos.codCorrelativo());
+
+                    mensaje("Pedido registrado con exito");
+                } catch (Exception ex) {
+                    mensaje("Error al registrar el pedido");
+                    System.out.println(ex.getMessage());
+                }
             }
         });
+
     }
 
 
@@ -202,6 +231,7 @@ public class RegistroPedidos extends JDialog {
 
             sumaTotal += cantidad * precioUnitario;
         }
+        totalPedido = sumaTotal;
         // Actualizamos la variable de instancia totalPedido y la etiqueta
         jLtotalPedido.setText("S/. " + String.format("%.2f", sumaTotal));
     }
@@ -216,6 +246,8 @@ public class RegistroPedidos extends JDialog {
         buscarButton.setEnabled(false);
         txtCantidad.setText("");
         cboProductos.setSelectedIndex(-1);
+        nuevoItemButton.setEnabled(true);
+        table.clearSelection();
     }
 
     private void mensaje(String mensaje) {
@@ -228,6 +260,7 @@ public class RegistroPedidos extends JDialog {
     }
 
     private void llenarCodPedido() {
+        arregloPedidos.cargarPedidos();
         txtCodPedido.setText(arregloPedidos.codCorrelativo());
     }
 
